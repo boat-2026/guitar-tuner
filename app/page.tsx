@@ -26,6 +26,7 @@ export default function Home() {
   const streamRef = useRef<MediaStream | null>(null), animationRef = useRef<number | null>(null);
   useEffect(() => () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); streamRef.current?.getTracks().forEach((track) => track.stop()); }, []);
   async function startTuner() {
+    if (streamRef.current) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
       streamRef.current = stream; const audio = new AudioContext(), source = audio.createMediaStreamSource(stream), analyser = audio.createAnalyser(); analyser.fftSize = 2048;
@@ -36,6 +37,7 @@ export default function Home() {
       listen();
     } catch { setMicError(true); }
   }
+  useEffect(() => { void startTuner(); }, []);
   const cents = reading?.cents ?? -14, inTune = !!reading && Math.abs(cents) <= 4;
   const activeIndex = reading ? STRINGS.findIndex((string) => string.name === reading.note && string.octave === reading.octave) : -1;
   const message = micError ? 'Microphone needed' : !started ? 'Tap to start' : !reading ? 'Play a string' : inTune ? 'IN TUNE' : `${Math.round(Math.abs(cents))} cents ${cents < 0 ? 'flat' : 'sharp'}`;
