@@ -11,29 +11,31 @@
     <style>
       :root { color-scheme: dark; --bg:#111212; --panel:#181a1b; --text:#f3f1eb; --muted:#a9a9a8; --dim:#525455; --amber:#ffc45e; --green:#69df88; }
       * { box-sizing:border-box; }
-      body { margin:0; min-height:100svh; display:grid; place-items:center; background:#0a0b0b; color:var(--text); font-family:ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-      main { width:min(100%, 480px); min-height:100svh; padding:calc(22px + env(safe-area-inset-top)) 24px calc(26px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:center; background:radial-gradient(circle at 50% 25%, #202222 0%, var(--bg) 50%, #0d0e0e 100%); overflow:hidden; }
+      html, body { width:100%; height:100%; overflow:hidden; overscroll-behavior:none; }
+      body { margin:0; height:100dvh; display:grid; place-items:center; background:#0a0b0b; color:var(--text); font-family:ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { width:min(100%, 480px); height:100dvh; min-height:0; padding:calc(18px + env(safe-area-inset-top)) 24px calc(18px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:center; background:radial-gradient(circle at 50% 25%, #202222 0%, var(--bg) 50%, #0d0e0e 100%); overflow:hidden; overscroll-behavior:none; touch-action:manipulation; }
       header { width:100%; display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.22em; }
       .live { display:flex; gap:7px; align-items:center; letter-spacing:.1em; opacity:0; transition:opacity .2s; }
       .live::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 12px var(--green); }
       .live.show { opacity:1; }
-      .note-block { text-align:center; margin-top:clamp(54px, 10vh, 92px); }
-      #note { font-size:clamp(142px, 35vw, 180px); font-weight:750; letter-spacing:-.1em; line-height:.76; margin-left:-.08em; }
-      #frequency { margin-top:30px; color:#c9c8c5; font-size:clamp(21px, 5vw, 26px); letter-spacing:.04em; }
-      .meter { position:relative; width:min(100%, 380px); height:220px; margin-top:68px; }
-      .arc { position:absolute; inset:0 0 auto; width:100%; height:auto; overflow:visible; }
+      .note-block { text-align:center; margin-top:clamp(30px, 6vh, 54px); }
+      #note { font-size:clamp(112px, 30vw, 160px); font-weight:750; letter-spacing:-.1em; line-height:.76; margin-left:-.08em; }
+      #frequency { margin-top:18px; color:#c9c8c5; font-size:clamp(18px, 4.6vw, 24px); letter-spacing:.04em; }
+      .meter { position:relative; width:min(100%, 380px); height:clamp(176px, 25vh, 210px); margin-top:clamp(32px, 5vh, 52px); }
+      .arc { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
       .arc path { fill:none; stroke:#555758; stroke-width:2; stroke-linecap:round; }
       .arc .major { stroke:#c9c9c5; stroke-width:3; }
       .arc .center { stroke:var(--green); stroke-width:4; }
-      .needle { position:absolute; width:4px; height:154px; left:calc(50% - 2px); bottom:11px; border-radius:999px; background:var(--amber); transform-origin:50% calc(100% - 5px); transform:rotate(-19deg); transition:transform .16s cubic-bezier(.16,1,.3,1), background .16s; box-shadow:0 0 18px #ffc45e55; }
+      .needle { position:absolute; width:4px; height:70%; left:calc(50% - 2px); bottom:11px; border-radius:999px; background:var(--amber); transform-origin:50% calc(100% - 5px); transform:rotate(-19deg); transition:transform .16s cubic-bezier(.16,1,.3,1), background .16s; box-shadow:0 0 18px #ffc45e55; }
       .needle::after { content:""; position:absolute; width:20px; height:20px; border-radius:50%; background:inherit; bottom:-5px; left:-8px; box-shadow:0 0 16px #ffc45e66; }
       .labels { position:absolute; width:100%; bottom:0; display:flex; justify-content:space-between; color:#b9b8b5; font-size:15px; font-weight:700; letter-spacing:.22em; }
-      #status { min-height:33px; margin-top:27px; font-size:27px; text-align:center; transition:color .15s; }
+      #status { min-height:28px; margin-top:18px; font-size:24px; text-align:center; transition:color .15s; }
       .strings { margin-top:auto; width:100%; display:grid; grid-template-columns:repeat(6, 1fr); gap:9px; }
       .string { aspect-ratio:1; display:grid; place-items:center; border:1px solid #2c2e2f; border-radius:18px; color:#c7c7c6; background:#1b1d1e; box-shadow:inset 0 1px #ffffff0d; font-size:clamp(22px, 6vw, 30px); font-weight:500; transition:.18s ease; }
       .string.active { color:var(--amber); border-color:var(--amber); box-shadow:inset 0 0 0 1px var(--amber), 0 0 19px #ffc45e18; }
-      .prompt { height:50px; margin:28px 0 3px; color:var(--muted); font-size:20px; text-align:center; }
+      .prompt { height:34px; margin:18px 0 3px; color:var(--muted); font-size:18px; text-align:center; }
       button { border:0; border-radius:999px; padding:14px 22px; color:#171513; background:var(--amber); font:700 15px/1 ui-rounded, sans-serif; letter-spacing:.04em; box-shadow:0 7px 25px #0008; cursor:pointer; }
+      button:not(.needs-permission) { display:none; }
       button.listening { background:#2a2c2c; color:#e2e1dd; }
       @media (min-width:481px) { body { padding:20px; } main { min-height:820px; border-radius:34px; box-shadow:0 30px 90px #0008; } }
     </style>
@@ -66,7 +68,7 @@
       function detectPitch(buffer, sampleRate) { let rms=0; for(const v of buffer) rms+=v*v; if(Math.sqrt(rms/buffer.length)<.012) return -1; let bestLag=-1, best=0; const min=Math.floor(sampleRate/420), max=Math.floor(sampleRate/70); for(let lag=min;lag<=max;lag++){let sum=0; for(let i=0;i<buffer.length-lag;i++) sum+=buffer[i]*buffer[i+lag]; if(sum>best){best=sum;bestLag=lag;}} return bestLag>0?sampleRate/bestLag:-1; }
       function render(hz) { const target=closestString(hz); const cents=Math.max(-50,Math.min(50,1200*Math.log2(hz/target.hz))); noteEl.textContent=target.name; frequencyEl.textContent=`${target.name}${target.octave} · ${hz.toFixed(1)} Hz`; needle.style.transform=`rotate(${cents*1.44}deg)`; const tuned=Math.abs(cents)<=4; needle.style.background=tuned?'var(--green)':'var(--amber)'; statusEl.textContent=tuned?'IN TUNE':`${Math.round(Math.abs(cents))} cent${Math.abs(cents)>=1.5?'s':''} ${cents<0?'flat':'sharp'}`; statusEl.style.color=tuned?'var(--green)':'var(--text)'; markups.forEach((el,i)=>el.classList.toggle('active', strings[i]===target)); }
       function loop(){ analyser.getFloatTimeDomainData(samples); const hz=detectPitch(samples,audio.sampleRate); if(hz>70&&hz<420){smoothed=smoothed?smoothed*.72+hz*.28:hz; render(smoothed); promptEl.textContent='Keep playing the string.';} else if(smoothed){promptEl.textContent='Play a string.';} raf=requestAnimationFrame(loop); }
-      async function startTuner(){ if (stream) return; try { stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}); audio=new AudioContext(); const source=audio.createMediaStreamSource(stream); analyser=audio.createAnalyser(); analyser.fftSize=2048; samples=new Float32Array(analyser.fftSize); source.connect(analyser); start.textContent='Listening…'; start.classList.add('listening'); start.disabled=true; live.classList.add('show'); statusEl.textContent='Play a string'; promptEl.textContent='Hold your phone near the guitar.'; loop(); } catch(error) { statusEl.textContent='Microphone needed'; promptEl.textContent='Allow microphone access, then try again.'; } }
+      async function startTuner(){ if (stream) return; try { stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}); audio=new AudioContext(); await audio.resume().catch(()=>{}); const source=audio.createMediaStreamSource(stream); analyser=audio.createAnalyser(); analyser.fftSize=2048; samples=new Float32Array(analyser.fftSize); source.connect(analyser); start.textContent='Listening…'; start.classList.remove('needs-permission'); start.classList.add('listening'); start.disabled=true; live.classList.add('show'); statusEl.textContent='Play a string'; promptEl.textContent='Hold your phone near the guitar.'; loop(); } catch(error) { start.textContent='Enable microphone'; start.classList.add('needs-permission'); start.disabled=false; statusEl.textContent='Microphone needed'; promptEl.textContent='Allow microphone access, then try again.'; } }
       start.addEventListener('click', startTuner);
       startTuner();
       if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');

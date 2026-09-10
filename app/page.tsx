@@ -29,7 +29,7 @@ export default function Home() {
     if (streamRef.current) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
-      streamRef.current = stream; const audio = new AudioContext(), source = audio.createMediaStreamSource(stream), analyser = audio.createAnalyser(); analyser.fftSize = 2048;
+      streamRef.current = stream; const audio = new AudioContext(); await audio.resume().catch(() => {}); const source = audio.createMediaStreamSource(stream), analyser = audio.createAnalyser(); analyser.fftSize = 2048;
       const samples = new Float32Array(analyser.fftSize); source.connect(analyser); setStarted(true); let smoothed: number | null = null;
       const listen = () => { analyser.getFloatTimeDomainData(samples); const pitch = detectPitch(samples, audio.sampleRate);
         if (pitch > 70 && pitch < 420) { smoothed = smoothed ? smoothed * 0.72 + pitch * 0.28 : pitch; const target = closestString(smoothed); setReading({ note: target.name, octave: target.octave, hz: smoothed, cents: Math.max(-50, Math.min(50, 1200 * Math.log2(smoothed / target.hz))) }); }
@@ -48,6 +48,6 @@ export default function Home() {
     <div className={inTune ? 'status tuned-text' : 'status'} aria-live="polite">{message}</div>
     <div className="strings" aria-label="Standard guitar tuning">{STRINGS.map((string, index) => <span className={index === activeIndex ? 'string active' : 'string'} key={`${string.name}${string.octave}`}>{string.name}</span>)}</div>
     <div className="prompt">{micError ? 'Allow microphone access, then try again.' : started ? 'Hold your phone near the guitar.' : 'Your tuner is ready.'}</div>
-    <button className={started ? 'start listening-button' : 'start'} disabled={started} onClick={startTuner}>{started ? 'Listening…' : 'Start tuning'}</button>
+    {micError && <button className="start" onClick={startTuner}>Enable microphone</button>}
   </main>;
 }
