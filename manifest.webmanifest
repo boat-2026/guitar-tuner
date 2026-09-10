@@ -1,0 +1,9 @@
+{
+  "name": "Guitar Tuner",
+  "short_name": "Tuner",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#111212",
+  "theme_color": "#111212",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#101112" />
+    <meta name="description" content="A fast, simple standard guitar tuner." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <title>Guitar Tuner</title>
+    <style>
+      :root { color-scheme: dark; --bg:#111212; --panel:#181a1b; --text:#f3f1eb; --muted:#a9a9a8; --dim:#525455; --amber:#ffc45e; --green:#69df88; }
+      * { box-sizing:border-box; }
+      body { margin:0; min-height:100svh; display:grid; place-items:center; background:#0a0b0b; color:var(--text); font-family:ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { width:min(100%, 480px); min-height:100svh; padding:calc(22px + env(safe-area-inset-top)) 24px calc(26px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:center; background:radial-gradient(circle at 50% 25%, #202222 0%, var(--bg) 50%, #0d0e0e 100%); overflow:hidden; }
+      header { width:100%; display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.22em; }
+      .live { display:flex; gap:7px; align-items:center; letter-spacing:.1em; opacity:0; transition:opacity .2s; }
+      .live::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 12px var(--green); }
+      .live.show { opacity:1; }
+      .note-block { text-align:center; margin-top:clamp(54px, 10vh, 92px); }
+      #note { font-size:clamp(142px, 35vw, 180px); font-weight:750; letter-spacing:-.1em; line-height:.76; margin-left:-.08em; }
+      #frequency { margin-top:30px; color:#c9c8c5; font-size:clamp(21px, 5vw, 26px); letter-spacing:.04em; }
+      .meter { position:relative; width:min(100%, 380px); height:220px; margin-top:68px; }
+      .arc { position:absolute; inset:0 0 auto; width:100%; height:auto; overflow:visible; }
+      .arc path { fill:none; stroke:#555758; stroke-width:2; stroke-linecap:round; }
+      .arc .major { stroke:#c9c9c5; stroke-width:3; }
+      .arc .center { stroke:var(--green); stroke-width:4; }
+      .needle { position:absolute; width:4px; height:154px; left:calc(50% - 2px); bottom:11px; border-radius:999px; background:var(--amber); transform-origin:50% calc(100% - 5px); transform:rotate(-19deg); transition:transform .16s cubic-bezier(.16,1,.3,1), background .16s; box-shadow:0 0 18px #ffc45e55; }
+      .needle::after { content:""; position:absolute; width:20px; height:20px; border-radius:50%; background:inherit; bottom:-5px; left:-8px; box-shadow:0 0 16px #ffc45e66; }
+      .labels { position:absolute; width:100%; bottom:0; display:flex; justify-content:space-between; color:#b9b8b5; font-size:15px; font-weight:700; letter-spacing:.22em; }
+      #status { min-height:33px; margin-top:27px; font-size:27px; text-align:center; transition:color .15s; }
+      .strings { margin-top:auto; width:100%; display:grid; grid-template-columns:repeat(6, 1fr); gap:9px; }
+      .string { aspect-ratio:1; display:grid; place-items:center; border:1px solid #2c2e2f; border-radius:18px; color:#c7c7c6; background:#1b1d1e; box-shadow:inset 0 1px #ffffff0d; font-size:clamp(22px, 6vw, 30px); font-weight:500; transition:.18s ease; }
+      .string.active { color:var(--amber); border-color:var(--amber); box-shadow:inset 0 0 0 1px var(--amber), 0 0 19px #ffc45e18; }
+      .prompt { height:50px; margin:28px 0 3px; color:var(--muted); font-size:20px; text-align:center; }
+      button { border:0; border-radius:999px; padding:14px 22px; color:#171513; background:var(--amber); font:700 15px/1 ui-rounded, sans-serif; letter-spacing:.04em; box-shadow:0 7px 25px #0008; cursor:pointer; }
+      button.listening { background:#2a2c2c; color:#e2e1dd; }
+      @media (min-width:481px) { body { padding:20px; } main { min-height:820px; border-radius:34px; box-shadow:0 30px 90px #0008; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header><span>GUITAR TUNER</span><span class="live" id="live">LISTENING</span></header>
+      <section class="note-block" aria-live="polite">
+        <div id="note">—</div>
+        <div id="frequency">Waiting for a note</div>
+      </section>
+      <section class="meter" aria-label="Tuning meter">
+        <svg class="arc" viewBox="0 0 380 220" aria-hidden="true"><g id="ticks"></g></svg>
+        <div class="needle" id="needle"></div>
+        <div class="labels"><span>FLAT</span><span>SHARP</span></div>
+      </section>
+      <div id="status" aria-live="polite">Tap to start</div>
+      <div class="strings" aria-label="Standard guitar tuning"><span class="string">E</span><span class="string">A</span><span class="string">D</span><span class="string">G</span><span class="string">B</span><span class="string">E</span></div>
+      <div class="prompt" id="prompt">Your tuner is ready.</div>
+      <button id="start">Start tuning</button>
+    </main>
+    <script>
+      const strings = [{ name:'E', octave:2, hz:82.41 }, { name:'A', octave:2, hz:110 }, { name:'D', octave:3, hz:146.83 }, { name:'G', octave:3, hz:196 }, { name:'B', octave:3, hz:246.94 }, { name:'E', octave:4, hz:329.63 }];
+      const noteEl = document.querySelector('#note'), frequencyEl = document.querySelector('#frequency'), statusEl = document.querySelector('#status'), needle = document.querySelector('#needle'), promptEl = document.querySelector('#prompt'), start = document.querySelector('#start'), live = document.querySelector('#live');
+      const markups = document.querySelectorAll('.string');
+      const tickGroup = document.querySelector('#ticks');
+      for (let i=-50;i<=50;i+=5) { const a=(i/50)*72-90, major=i%10===0, r1=major?165:171, r2=188; const rad=a*Math.PI/180, x1=190+r1*Math.cos(rad), y1=205+r1*Math.sin(rad), x2=190+r2*Math.cos(rad), y2=205+r2*Math.sin(rad); tickGroup.insertAdjacentHTML('beforeend', `<path class="${i===0?'center':major?'major':''}" d="M${x1} ${y1}L${x2} ${y2}"/>`); }
+      let audio, analyser, samples, stream, raf, smoothed = null;
+      function closestString(hz) { return strings.reduce((best, s) => Math.abs(1200*Math.log2(hz/s.hz)) < Math.abs(1200*Math.log2(hz/best.hz)) ? s : best); }
+      function detectPitch(buffer, sampleRate) { let rms=0; for(const v of buffer) rms+=v*v; if(Math.sqrt(rms/buffer.length)<.012) return -1; let bestLag=-1, best=0; const min=Math.floor(sampleRate/420), max=Math.floor(sampleRate/70); for(let lag=min;lag<=max;lag++){let sum=0; for(let i=0;i<buffer.length-lag;i++) sum+=buffer[i]*buffer[i+lag]; if(sum>best){best=sum;bestLag=lag;}} return bestLag>0?sampleRate/bestLag:-1; }
+      function render(hz) { const target=closestString(hz); const cents=Math.max(-50,Math.min(50,1200*Math.log2(hz/target.hz))); noteEl.textContent=target.name; frequencyEl.textContent=`${target.name}${target.octave} · ${hz.toFixed(1)} Hz`; needle.style.transform=`rotate(${cents*1.44}deg)`; const tuned=Math.abs(cents)<=4; needle.style.background=tuned?'var(--green)':'var(--amber)'; statusEl.textContent=tuned?'IN TUNE':`${Math.round(Math.abs(cents))} cent${Math.abs(cents)>=1.5?'s':''} ${cents<0?'flat':'sharp'}`; statusEl.style.color=tuned?'var(--green)':'var(--text)'; markups.forEach((el,i)=>el.classList.toggle('active', strings[i]===target)); }
+      function loop(){ analyser.getFloatTimeDomainData(samples); const hz=detectPitch(samples,audio.sampleRate); if(hz>70&&hz<420){smoothed=smoothed?smoothed*.72+hz*.28:hz; render(smoothed); promptEl.textContent='Keep playing the string.';} else if(smoothed){promptEl.textContent='Play a string.';} raf=requestAnimationFrame(loop); }
+      async function startTuner(){ try { stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}); audio=new AudioContext(); const source=audio.createMediaStreamSource(stream); analyser=audio.createAnalyser(); analyser.fftSize=2048; samples=new Float32Array(analyser.fftSize); source.connect(analyser); start.textContent='Listening…'; start.classList.add('listening'); start.disabled=true; live.classList.add('show'); statusEl.textContent='Play a string'; promptEl.textContent='Hold your phone near the guitar.'; loop(); } catch(error) { statusEl.textContent='Microphone needed'; promptEl.textContent='Allow microphone access, then try again.'; } }
+      start.addEventListener('click', startTuner);
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+    </script>
+  </body>
+</html>
